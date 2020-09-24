@@ -293,6 +293,21 @@ class OccupancyGridObservation(ObservationType):
                             int((y - self.grid_size[1, 0]) / self.grid_step[1]))
                     if 0 <= cell[1] < self.grid.shape[-2] and 0 <= cell[0] < self.grid.shape[-1]:
                         self.grid[layer, cell[1], cell[0]] = vehicle[feature]
+
+            # ego-y
+            if "presence" in self.features:
+                # use absolute y-coordinate instead of constant "1" for presence
+                index = self.features.index('presence')
+                side_lanes = self.env.road.network.all_side_lanes(self.observer_vehicle.lane_index)
+                yrange = [-AbstractLane.DEFAULT_WIDTH * len(side_lanes), AbstractLane.DEFAULT_WIDTH * len(side_lanes)]
+                self.grid[index, self.grid.shape[1] // 2, self.grid.shape[2] // 2] = utils.lmap(self.observer_vehicle.position[1], yrange, [-1, 1])
+            if 'vx' in self.features:
+                index = self.features.index('vx')
+                self.grid[index, self.grid.shape[1] // 2, self.grid.shape[2] // 2] = utils.lmap(self.observer_vehicle.velocity[0], self.features_range['vx'], [-1, 1])
+            if 'vy' in self.features:
+                index = self.features.index('vy')
+                self.grid[index, self.grid.shape[1] // 2, self.grid.shape[2] // 2] = utils.lmap(self.observer_vehicle.velocity[1], self.features_range['vy'], [-1, 1])
+
             # Clip
             obs = np.clip(self.grid, -1, 1)
             return obs
